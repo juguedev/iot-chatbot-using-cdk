@@ -2,11 +2,25 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { CfnBot, CfnBotAlias, CfnBotVersion } from 'aws-cdk-lib/aws-lex';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as path from 'path';
 
 export class IotChatbotUsingCdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+
+    // Define the Lambda function
+    const fulfillmentLambda = new lambda.Function(this, 'MyLambda', {
+      runtime: lambda.Runtime.PYTHON_3_8,
+      handler: 'lambda_function.lambda_handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda-code')),
+      memorySize: 256,
+      timeout: cdk.Duration.seconds(10),
+      environment: {
+        MY_ENV_VARIABLE: 'some_value'
+      }
+    });
 
     // Create IAM role for the Lex bot
     const lexBotRole = new iam.Role(this, 'LexBotRole', {
@@ -23,6 +37,13 @@ export class IotChatbotUsingCdkStack extends cdk.Stack {
       ],
       resources: ['*']
     }));
+
+    // Attach permission policy to the IAM Role to invoke the Lambda function
+    lexBotRole.addToPolicy(new iam.PolicyStatement({
+      actions: ['lambda:InvokeFunction'],
+      resources: [fulfillmentLambda.functionArn]
+    }));
+
 
 
     const bot = new CfnBot(this, "chatbot-test", {
@@ -86,7 +107,10 @@ export class IotChatbotUsingCdkStack extends cdk.Stack {
                   priority: 1,
                   slotName: "value"
                 }
-              ]
+              ],
+              fulfillmentCodeHook: {
+                enabled: true,
+              }
             },
             {
               name: "FallbackIntent",
@@ -133,10 +157,26 @@ export class IotChatbotUsingCdkStack extends cdk.Stack {
       botAliasLocaleSettings: [{
         botAliasLocaleSetting: {
           enabled: true,
+          codeHookSpecification: {
+            lambdaCodeHook: {
+              codeHookInterfaceVersion: "1.0",
+              lambdaArn: fulfillmentLambda.functionArn
+            }
+          }
         },
         localeId: 'en_US',
       }],
     })
+
+
+    
+    //Lex Alias needs a resource-based permission attatched to the lambda function to invoke
+    fulfillmentLambda.addPermission('AllowLexInvocation', {
+      principal: new iam.ServicePrincipal('lex.amazonaws.com'),
+      action: 'lambda:InvokeFunction',
+      sourceArn: botAlias.attrArn,
+    });
+
 
   }
 }

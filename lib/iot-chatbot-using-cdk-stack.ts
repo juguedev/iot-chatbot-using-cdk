@@ -2,6 +2,7 @@ import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import { CfnBot, CfnBotAlias, CfnBotVersion } from 'aws-cdk-lib/aws-lex';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as ddb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as path from 'path';
 
@@ -10,18 +11,44 @@ export class IotChatbotUsingCdkStack extends cdk.Stack {
     super(scope, id, props);
 
 
+    // Create IAM role for the Lex bot
+    const lambdaRole = new iam.Role(this, 'LambdaRole', {
+      assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
+      description: 'IAM role for the Lambda',
+      roleName: 'LambdaRole'
+    });
+
+
     // Define the Lambda function
     const fulfillmentLambda = new lambda.Function(this, 'MyLambda', {
       runtime: lambda.Runtime.PYTHON_3_8,
       handler: 'lambda_function.lambda_handler',
+      functionName: "fulfillment-lambda",
       code: lambda.Code.fromAsset(path.join(__dirname, '../lambda-code')),
       memorySize: 256,
       timeout: cdk.Duration.seconds(10),
-      environment: {
-        MY_ENV_VARIABLE: 'some_value'
-      }
+      role: lambdaRole
     });
+    lambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole'));
+    
+    const dynamoTable = new ddb.Table(
+      this,
+      'ddb-table',
+      {
+        tableName: 'device-data',
+        partitionKey: { name: 'device_id', type: ddb.AttributeType.STRING },
+        billingMode: ddb.BillingMode.PAY_PER_REQUEST,
+        removalPolicy: cdk.RemovalPolicy.DESTROY
+      }
+    )
+    
+        // Attach permission policy to the IAM Role to invoke the Lambda function
+        lambdaRole.addToPolicy(new iam.PolicyStatement({
+          actions: ['*'],
+          resources: [dynamoTable.tableArn]
+        }))
 
+    
     // Create IAM role for the Lex bot
     const lexBotRole = new iam.Role(this, 'LexBotRole', {
       assumedBy: new iam.ServicePrincipal('lex.amazonaws.com'),
@@ -44,6 +71,17 @@ export class IotChatbotUsingCdkStack extends cdk.Stack {
       resources: [fulfillmentLambda.functionArn]
     }));
 
+    const deviceTypeName = {
+      name: "deviceType",
+      parentSlotTypeSignature: "AMAZON.AlphaNumeric",
+      valueSelectionSetting: {
+        resolutionStrategy: "ORIGINAL_VALUE",
+        regexFilter: {
+          pattern: "[a-z]{1,10}"
+        }
+      }
+    }
+
 
 
     const bot = new CfnBot(this, "chatbot-test", {
@@ -60,30 +98,21 @@ export class IotChatbotUsingCdkStack extends cdk.Stack {
           nluConfidenceThreshold: 0.40,
 
           slotTypes: [
-            {
-              name: "valueType",
-              parentSlotTypeSignature: "AMAZON.AlphaNumeric",
-              valueSelectionSetting: {
-                resolutionStrategy: "ORIGINAL_VALUE",
-                regexFilter: {
-                  pattern: "[0-9]{8}"
-                }
-              }
-            }
+            deviceTypeName
           ],
 
           intents: [
             {
-              name: "Update",
+              name: "GetData",
               sampleUtterances: [
-                { utterance: "I want to update" },
-                { utterance: "I have a new data" },
-                { utterance: "My new value is {value}" }
+                { utterance: "I want to get data from my device" },
+                { utterance: "I need to query data for my device {device}" },
+                { utterance: "My device is {device}" }
               ],
               slots: [
                 {
-                  name: "value",
-                  slotTypeName: "valueType",
+                  name: "device",
+                  slotTypeName: "deviceType",
                   valueElicitationSetting: {
                     slotConstraint: "Required",
                     promptSpecification: {
@@ -91,7 +120,7 @@ export class IotChatbotUsingCdkStack extends cdk.Stack {
                         {
                           message: {
                             plainTextMessage: {
-                              value: "What is your value?"
+                              value: "What is your device?"
                             }
                           }
                         }
@@ -105,7 +134,7 @@ export class IotChatbotUsingCdkStack extends cdk.Stack {
               slotPriorities: [
                 {
                   priority: 1,
-                  slotName: "value"
+                  slotName: "device"
                 }
               ],
               fulfillmentCodeHook: {

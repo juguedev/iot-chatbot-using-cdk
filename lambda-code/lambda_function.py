@@ -1,52 +1,65 @@
 import json
 import logging
+import boto3
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-def close(session_attributes, fulfillment_state, message):
-    """
-    Close dialog with the customer.
 
-    Parameters:
-        session_attributes (dict): Session attributes.
-        fulfillment_state (str): Fulfillment state.
-        message (dict): Message to be sent to the user.
+import json
+import logging
 
-    Returns:
-        dict: Response object.
-    """
-    return {
-        'sessionAttributes': session_attributes,
-        'dialogAction': {
-            'type': 'ElicitIntent',
-            'message': message
-        }
-    }
-
-def build_response(intent, callback):
-    """
-    Build response to send to the user.
-
-    Parameters:
-        intent (dict): Intent data.
-        callback (function): Callback function to invoke.
-
-    Returns:
-        None
-    """
-    logger.info("buildResponse")
-
-    response_text = "Welcome to our service. Are you interested in registering? Reply REGISTER if interested, otherwise reply CANCEL or just ignore this message."
-
-    callback(close(intent['sessionAttributes'], 'Fulfilled', {
-        'contentType': 'PlainText',
-        'content': response_text
-    }))
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
 def lambda_handler(event, context):
+    logger.debug('event={}'.format(event))
+
+    slots = event['interpretations'][0]['intent']['slots']
+    logger.debug('slots={}'.format(slots))
+    device_name = slots['device']['value']['originalValue']
+    
+    logger.debug('event.bot.name={}'.format(event['bot']['name']))
+    logger.debug(f"request received for device: {device_name}")
+
+    
+    data = get_dynamo_data("raspberry")
+    print(data)
+    
+    return close(data, 'Fulfilled', {'contentType': 'PlainText','content': "response-test"})  
+
+
+def close(event_data, fulfillment_state, message):
+    response = {
+        "sessionState": {
+        "dialogAction": {
+            "type": "Close"
+        },
+        "intent": {
+            "name": "GetData",
+            "state": "Fulfilled"
+        }
+    },
+    "messages": [
+        {
+            "contentType": "PlainText",
+            "content": str(event_data)
+        },
+        {
+            "contentType": "PlainText",
+            "content": "Otros datos"
+        },
+    ],
+    }
+    
+    logger.debug('<<SupportBot>> "Lambda fulfillment function response = \n' + str(response)) 
+
+    return response
+
+
+def get_dynamo_data(device_id):
     """
-    Main Lambda handler.
+    Query DynamoDB for data.
 
     Parameters:
         event (dict): Event data passed to the Lambda function.
@@ -55,12 +68,15 @@ def lambda_handler(event, context):
     Returns:
         dict: Response object.
     """
-    try:
-        logger.info(event)
-        logger.info(f"request received for userId={event['userId']}, intentName={event['currentIntent']['name']}")
+    logger.info("getDynamoData")
 
-        build_response(event,
-                       lambda response: response)
-    except Exception as e:
-        logger.exception("An error occurred:")
-        raise e
+    dynamodb = boto3.resource('dynamodb')
+    table = dynamodb.Table('device-data')
+
+    response = table.get_item(
+        Key={
+            'device_id': device_id
+        }
+    )
+
+    return response['Item']

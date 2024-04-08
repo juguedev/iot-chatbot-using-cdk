@@ -13,7 +13,7 @@ export class DataFlow extends cdk.Stack {
 		super(scope, id, props);
 
 		// AWS KINESIS DATA STREAM
-		const stream = new kinesis.Stream(this, 'MyEncryptedStream', {
+		const stream = new kinesis.Stream(this, 'DataStream', {
 			streamName: createName('kinesis', 'data-stream'),
 			encryption: kinesis.StreamEncryption.MANAGED,
 		});

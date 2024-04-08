@@ -8,23 +8,38 @@ import * as iot from 'aws-cdk-lib/aws-iot';
 import { KinesisEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { createName } from '../utils/createName';
 
+export interface DataFlowProps extends cdk.StackProps {
+	env: {
+		region: string;
+		project: string;
+		environment: string;
+		accountId: string;
+		tblName: string;
+		dbUser: string;
+	};
+}
+
 export class DataFlow extends cdk.Stack {
-	constructor(scope: Construct, id: string, props?: cdk.StackProps) {
+	constructor(scope: Construct, id: string, props: DataFlowProps) {
 		super(scope, id, props);
+
+		const TOPIC = 'my/topic';
+		const ERROR_TOPIC = 'errors';
 
 		// AWS KINESIS DATA STREAM
 		const stream = new kinesis.Stream(this, 'DataStream', {
-			streamName: createName('kinesis', 'data-stream'),
+			streamName: createName('kinesis', 'data_stream'),
 			encryption: kinesis.StreamEncryption.MANAGED,
 		});
 
 		// AWS DYNAMODB
 		const table = new dynamodb.Table(this, 'Table', {
-			tableName: createName('tbl', 'measures'),
+			tableName: props.env.tblName,
 			partitionKey: {
 				name: 'id',
-				type: dynamodb.AttributeType.STRING,
+				type: dynamodb.AttributeType.NUMBER,
 			},
+			billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
 			removalPolicy: cdk.RemovalPolicy.DESTROY,
 		});
 
@@ -32,7 +47,7 @@ export class DataFlow extends cdk.Stack {
 		const savePayloadFunction = new lambda.Function(this, 'SavePayloadFunction', {
 			runtime: lambda.Runtime.PYTHON_3_12,
 			handler: 'save_payload.handler',
-			functionName: createName('fn', 'save-payload'),
+			functionName: createName('fn', 'save_payload'),
 			description: 'Lambda function para guardar el payload en Dynamodb.',
 			retryAttempts: 0,
 			code: lambda.Code.fromAsset('lambda-code'),
@@ -69,15 +84,15 @@ export class DataFlow extends cdk.Stack {
 		// Añade una política para permitir publicar los errores de kinesis en IoT Core
 		const errorKinesisPolicyStatement = new iam.PolicyStatement({
 			actions: ['iot:Publish'],
-			resources: [stream.streamArn],
+			resources: [`arn:aws:iot:${props.env.region}:${props.env.accountId}:topic/${ERROR_TOPIC}`],
 		});
 		errorActionRole.addToPolicy(errorKinesisPolicyStatement);
 
 		// Define la regla IoT
 		new iot.CfnTopicRule(this, 'Rule', {
-			ruleName: createName('iot-core', 'rule'),
+			ruleName: createName('iot_core', 'rule'),
 			topicRulePayload: {
-				sql: 'SELECT * FROM "my/topic"',
+				sql: `SELECT * FROM '${TOPIC}'`,
 				actions: [
 					{
 						kinesis: {
@@ -88,10 +103,10 @@ export class DataFlow extends cdk.Stack {
 					},
 				],
 				errorAction: {
-					kinesis: {
+					republish: {
 						roleArn: errorActionRole.roleArn,
-						streamName: stream.streamName,
-						partitionKey: '${newuuid()}',
+						topic: ERROR_TOPIC,
+						qos: 0,
 					},
 				},
 			},

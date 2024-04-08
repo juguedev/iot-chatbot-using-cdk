@@ -5,7 +5,7 @@ import { IotChatbotUsingCdkStack } from '../lib/iot-chatbot-using-cdk-stack';
 import { DataFlow } from '../lib/data-flow';
 import { environments } from './environments';
 
-const { project } = environments['dev'];
+const env = environments['dev'];
 
 const app = new cdk.App();
 new IotChatbotUsingCdkStack(app, 'IotChatbotUsingCdkStack', {
@@ -21,6 +21,6 @@ new IotChatbotUsingCdkStack(app, 'IotChatbotUsingCdkStack', {
 	/* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
 });
 
-const dataFlow = new DataFlow(app, 'DataFlow');
+const dataFlow = new DataFlow(app, 'DataFlow', { env });
 
-cdk.Tags.of(dataFlow).add('proyecto', project);
+cdk.Tags.of(dataFlow).add('proyecto', env.project);

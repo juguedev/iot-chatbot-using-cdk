@@ -2,24 +2,27 @@ interface Environment {
 	region: string;
 	project: string;
 	environment: string;
-	dbName: string;
+	accountId: string;
+	tblName: string;
 	dbUser: string;
 }
 
 export const environments: { [key: string]: Environment } = {
 	dev: {
 		region: 'us-east-2',
-		project: 'chatbot-iot',
+		project: 'iot_chatbot',
 		environment: 'dev',
-		dbName: 'measures',
+		accountId: '884162918988',
+		tblName: 'tbl_measures',
 		dbUser: 'root',
 	},
 
 	prod: {
 		region: 'us-east-2',
-		project: 'chatbot-iot',
+		project: 'iot_chatbot',
 		environment: 'prod',
-		dbName: 'measures',
+		accountId: '884162918988',
+		tblName: 'tbl_measures',
 		dbUser: 'root',
 	},
 };

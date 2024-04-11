@@ -8,23 +8,22 @@ import * as iot from 'aws-cdk-lib/aws-iot';
 import { KinesisEventSource } from 'aws-cdk-lib/aws-lambda-event-sources';
 import { createName } from '../utils/createName';
 
-export interface DataFlowProps extends cdk.StackProps {
+export interface DataFlowStackProps extends cdk.StackProps {
 	env: {
 		region: string;
 		project: string;
 		environment: string;
 		accountId: string;
 		tblName: string;
-		dbUser: string;
 	};
 }
 
-export class DataFlow extends cdk.Stack {
-	constructor(scope: Construct, id: string, props: DataFlowProps) {
+export class DataFlowStack extends cdk.Stack {
+	constructor(scope: Construct, id: string, props: DataFlowStackProps) {
 		super(scope, id, props);
 
-		const TOPIC = 'my/topic';
-		const ERROR_TOPIC = 'errors';
+		const TOPIC = 'raspberry/sensor';
+		const ERROR_TOPIC = 'kinesis/errors';
 
 		// AWS KINESIS DATA STREAM
 		const stream = new kinesis.Stream(this, 'DataStream', {

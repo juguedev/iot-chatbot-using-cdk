@@ -36,7 +36,7 @@ export class DataFlowStack extends cdk.Stack {
 			tableName: props.env.tblName,
 			partitionKey: {
 				name: 'id',
-				type: dynamodb.AttributeType.NUMBER,
+				type: dynamodb.AttributeType.STRING,
 			},
 			billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
 			removalPolicy: cdk.RemovalPolicy.DESTROY,
@@ -45,13 +45,16 @@ export class DataFlowStack extends cdk.Stack {
 		// AWS LAMBDAS FUNCTION
 		const savePayloadFunction = new lambda.Function(this, 'SavePayloadFunction', {
 			runtime: lambda.Runtime.PYTHON_3_12,
-			handler: 'save_payload.handler',
+			handler: 'save_payload.lambda_handler',
 			functionName: createName('fn', 'save_payload'),
 			description: 'Lambda function para guardar el payload en Dynamodb.',
 			retryAttempts: 0,
 			code: lambda.Code.fromAsset('lambda-code'),
 			timeout: cdk.Duration.seconds(240),
 			memorySize: 1024,
+			environment: {
+				['TBL_NAME']: props.env.tblName,
+			},
 		});
 
 		table.grantReadWriteData(savePayloadFunction);

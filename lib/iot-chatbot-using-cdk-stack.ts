@@ -38,12 +38,18 @@ export class IotChatbotUsingCdkStack extends cdk.Stack {
 			memorySize: 256,
 			timeout: cdk.Duration.seconds(10),
 			role: lambdaRole,
+			environment: {
+				['TBL_NAME']: props.env.tblName,
+			},
 		});
-		lambdaRole.addManagedPolicy(iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole'));
+		lambdaRole.addManagedPolicy(
+			iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole')
+		);
 
 		const dynamoTable = new ddb.Table(this, 'ddb-table', {
 			tableName: props.env.tblName,
 			partitionKey: { name: 'device_id', type: ddb.AttributeType.STRING },
+			sortKey: { name: 'timestamp', type: ddb.AttributeType.NUMBER },
 			billingMode: ddb.BillingMode.PAY_PER_REQUEST,
 			removalPolicy: cdk.RemovalPolicy.DESTROY,
 		});

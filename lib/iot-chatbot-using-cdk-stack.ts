@@ -92,11 +92,15 @@ export class IotChatbotUsingCdkStack extends cdk.Stack {
 					localeId: 'en_US',
 					nluConfidenceThreshold: 0.4,
 
-					slotTypes: [slotTypes.deviceTypeName],
+					slotTypes: [
+						slotTypes.deviceTypeName,
+						slotTypes.featureTypeName,
+						slotTypes.aggregationTypeName
+					],
 
 					intents: [
 						intents.greetingIntent,
-						intents.getDataIntent,
+						intents.getDataIntent(slotTypes.deviceTypeName.name, slotTypes.featureTypeName.name),
 						intents.fallbackIntent
 					],
 				},

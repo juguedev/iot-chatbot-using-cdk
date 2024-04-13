@@ -9,7 +9,7 @@ const greetingIntent = {
         { utterance: 'Hi!' },
         { utterance: 'Hello!' }
     ],
-    intentClosingSetting : {
+    intentClosingSetting: {
         closingResponse: {
             messageGroupsList: [
                 {
@@ -24,45 +24,71 @@ const greetingIntent = {
     }
 }
 
-const getDataIntent = {
-    name: 'GetData',
-    sampleUtterances: [
-        { utterance: 'I want to get data from my device' },
-        { utterance: 'I need to query data for my device {device}' },
-        { utterance: 'My device is {device}' },
-    ],
-    slots: [
-        {
-            name: 'device',
-            slotTypeName: 'deviceType',
-            valueElicitationSetting: {
-                slotConstraint: 'Required',
-                promptSpecification: {
-                    messageGroupsList: [
-                        {
-                            message: {
-                                plainTextMessage: {
-                                    value: 'What is your device?',
+const getDataIntent = (deviceTypeName: string, featureTypeName: string) => {
+    return {
+        name: 'GetData',
+        sampleUtterances: [
+            { utterance: 'I want to get data from my device' },
+            { utterance: 'I need to query data for my device {device}' },
+            { utterance: 'My device is {device}' },
+        ],
+        slots: [
+            {
+                name: 'device',
+                slotTypeName: deviceTypeName,
+                valueElicitationSetting: {
+                    slotConstraint: 'Required',
+                    promptSpecification: {
+                        messageGroupsList: [
+                            {
+                                message: {
+                                    plainTextMessage: {
+                                        value: 'What is your device?',
+                                    },
                                 },
                             },
-                        },
-                    ],
-                    maxRetries: 2,
-                    allowInterrupt: true,
+                        ],
+                        maxRetries: 2,
+                        allowInterrupt: true,
+                    },
                 },
             },
+            {
+                name: 'feature',
+                slotTypeName: featureTypeName,
+                valueElicitationSetting: {
+                    slotConstraint: 'Required',
+                    promptSpecification: {
+                        messageGroupsList: [
+                            {
+                                message: {
+                                    plainTextMessage: {
+                                        value: 'What is the value or feature you want to query?',
+                                    },
+                                },
+                            },
+                        ],
+                        maxRetries: 2,
+                        allowInterrupt: true,
+                    },
+                },
+            },
+        ],
+        slotPriorities: [
+            {
+                priority: 1,
+                slotName: 'device',
+            },
+            {
+                priority: 2,
+                slotName: 'feature',
+            },
+        ],
+        fulfillmentCodeHook: {
+            enabled: true,
         },
-    ],
-    slotPriorities: [
-        {
-            priority: 1,
-            slotName: 'device',
-        },
-    ],
-    fulfillmentCodeHook: {
-        enabled: true,
-    },
-}
+    }
+};
 
 const fallbackIntent = {
     name: 'FallbackIntent',

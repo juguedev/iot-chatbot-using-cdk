@@ -5,6 +5,8 @@ import * as iam from 'aws-cdk-lib/aws-iam';
 import * as ddb from 'aws-cdk-lib/aws-dynamodb';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as path from 'path';
+import * as slotTypes from './chatbot/slot-types';
+import * as intents from './chatbot/intents';
 
 export interface IotChatbotUsingCdkStackProps extends cdk.StackProps {
 	env: {
@@ -77,17 +79,6 @@ export class IotChatbotUsingCdkStack extends cdk.Stack {
 			})
 		);
 
-		const deviceTypeName = {
-			name: 'deviceType',
-			parentSlotTypeSignature: 'AMAZON.AlphaNumeric',
-			valueSelectionSetting: {
-				resolutionStrategy: 'ORIGINAL_VALUE',
-				regexFilter: {
-					pattern: '[a-z]{1,10}',
-				},
-			},
-		};
-
 		const bot = new CfnBot(this, 'chatbot-test', {
 			roleArn: lexBotRole.roleArn,
 			dataPrivacy: {
@@ -101,66 +92,12 @@ export class IotChatbotUsingCdkStack extends cdk.Stack {
 					localeId: 'en_US',
 					nluConfidenceThreshold: 0.4,
 
-					slotTypes: [deviceTypeName],
+					slotTypes: [slotTypes.deviceTypeName],
 
 					intents: [
-						{
-							name: 'GetData',
-							sampleUtterances: [
-								{ utterance: 'I want to get data from my device' },
-								{ utterance: 'I need to query data for my device {device}' },
-								{ utterance: 'My device is {device}' },
-							],
-							slots: [
-								{
-									name: 'device',
-									slotTypeName: 'deviceType',
-									valueElicitationSetting: {
-										slotConstraint: 'Required',
-										promptSpecification: {
-											messageGroupsList: [
-												{
-													message: {
-														plainTextMessage: {
-															value: 'What is your device?',
-														},
-													},
-												},
-											],
-											maxRetries: 2,
-											allowInterrupt: true,
-										},
-									},
-								},
-							],
-							slotPriorities: [
-								{
-									priority: 1,
-									slotName: 'device',
-								},
-							],
-							fulfillmentCodeHook: {
-								enabled: true,
-							},
-						},
-						{
-							name: 'FallbackIntent',
-							description: 'Default intent when no other intent matches',
-							parentIntentSignature: 'AMAZON.FallbackIntent',
-							intentClosingSetting: {
-								closingResponse: {
-									messageGroupsList: [
-										{
-											message: {
-												plainTextMessage: {
-													value: 'Sorry I am having trouble understanding.',
-												},
-											},
-										},
-									],
-								},
-							},
-						},
+						intents.greetingIntent,
+						intents.getDataIntent,
+						intents.fallbackIntent
 					],
 				},
 			],

@@ -1,0 +1,4 @@
+paho-mqtt
+Adafruit_DHT
+python-dotenv
+python-decouple

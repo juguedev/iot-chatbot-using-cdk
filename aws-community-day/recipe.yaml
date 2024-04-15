@@ -1,0 +1,28 @@
+---
+RecipeFormatVersion: '2020-01-25'
+ComponentName: '{COMPONENT_NAME}'
+ComponentVersion: '{COMPONENT_VERSION}'
+ComponentDescription: 'Data Processing.'
+ComponentPublisher: '{COMPONENT_AUTHOR}'
+ComponentConfiguration:
+  DefaultConfiguration:
+    accessControl:
+      aws.greengrass.ipc.mqttproxy:
+        com.communityday.DataProcessing:mqttproxy:1:
+          policyDescription: 'Allows access to publish/subscribe to topics.'
+          operations:
+            - 'aws.greengrass#PublishToIoTCore'
+            - 'aws.greengrass#SubscribeToIoTCore'
+          resources:
+            - 'raspberry/sensor'
+Manifests:
+  - Platform:
+      os: all
+    Artifacts:
+      - URI: 's3://BUCKET_NAME/COMPONENT_NAME/COMPONENT_VERSION/com.communityday.DataProcessing.zip'
+        Unarchive: ZIP
+    Lifecycle:
+      Install: 'python3 -m venv iot_venv && . iot_venv/bin/activate && python3 -m pip install -r {artifacts:decompressedPath}/com.communityday.DataProcessing/requirements.txt'
+      Run:
+        Script: '. iot_venv/bin/activate && python3 -u {artifacts:decompressedPath}/com.communityday.DataProcessing/main.py'
+        RequiresPrivilege: 'true'

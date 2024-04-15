@@ -1,0 +1,23 @@
+{
+	"targetArn": "",
+	"deploymentName": "Deployment for us-east-1-iot-thing-group",
+	"components": {
+		"aws.greengrass.Cli": {
+			"componentVersion": "2.12.4"
+		},
+		"com.communityday.DataProcessing": {
+			"componentVersion": "1.0.1"
+		}
+	},
+	"deploymentPolicies": {
+		"failureHandlingPolicy": "DO_NOTHING",
+		"componentUpdatePolicy": {
+			"timeoutInSeconds": 60,
+			"action": "NOTIFY_COMPONENTS"
+		},
+		"configurationValidationPolicy": {
+			"timeoutInSeconds": 60
+		}
+	},
+	"iotJobConfiguration": {}
+}

@@ -24,7 +24,7 @@ const greetingIntent = {
     }
 }
 
-const getDataIntent = (deviceTypeName: string, featureTypeName: string) => {
+const getDataIntent = (deviceTypeName: string, featureTypeName: string,  aggregationTypeName: string) => {
     return {
         name: 'GetData',
         sampleUtterances: [
@@ -73,6 +73,26 @@ const getDataIntent = (deviceTypeName: string, featureTypeName: string) => {
                     },
                 },
             },
+            {
+                name: 'aggregation',
+                slotTypeName: aggregationTypeName,
+                valueElicitationSetting: {
+                    slotConstraint: 'Required',
+                    promptSpecification: {
+                        messageGroupsList: [
+                            {
+                                message: {
+                                    plainTextMessage: {
+                                        value: 'What is the aggregation you want to query? (mean, latest, range, mode, median)',
+                                    },
+                                },
+                            },
+                        ],
+                        maxRetries: 2,
+                        allowInterrupt: true,
+                    },
+                },
+            }
         ],
         slotPriorities: [
             {
@@ -82,6 +102,10 @@ const getDataIntent = (deviceTypeName: string, featureTypeName: string) => {
             {
                 priority: 2,
                 slotName: 'feature',
+            },
+            {
+                priority: 3,
+                slotName: 'aggregation',
             },
         ],
         fulfillmentCodeHook: {

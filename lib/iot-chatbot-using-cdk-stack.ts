@@ -106,7 +106,10 @@ export class IotChatbotUsingCdkStack extends cdk.Stack {
 
 					intents: [
 						intents.greetingIntent,
-						intents.getDataIntent(slotTypes.deviceTypeName.name, slotTypes.featureTypeName.name),
+						intents.getDataIntent(
+							slotTypes.deviceTypeName.name,
+							slotTypes.featureTypeName.name,
+							slotTypes.aggregationTypeName.name),
 						intents.fallbackIntent
 					],
 				},

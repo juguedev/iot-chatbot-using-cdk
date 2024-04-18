@@ -15,10 +15,12 @@ def lambda_handler(event, context):
     logger.info('slots={}'.format(slots))
     device_name = slots['device']['value']['originalValue']
     feature_name = slots['feature']['value']['originalValue']
+    aggregation = slots['aggregation']['value']['originalValue']
     
     logger.info('event.bot.name={}'.format(event['bot']['name']))
     logger.info(f"request received for device: {device_name}")
     logger.info(f"request received for feature: {feature_name}")
+    logger.info(f"request received for aggregation: {aggregation}")
 
     
     data = get_dynamo_data(device_name, feature_name)
@@ -42,10 +44,6 @@ def close(event_data, fulfillment_state, message):
         {
             "contentType": "PlainText",
             "content": str(event_data)
-        },
-        {
-            "contentType": "PlainText",
-            "content": "Otros datos"
         },
     ],
     }

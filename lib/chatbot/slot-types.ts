@@ -48,12 +48,27 @@ const aggregationTypeName = {
     slotTypeValues: [
         {
             sampleValue: {
-                value: 'average',
+                value: 'median',
             },
         },
         {
             sampleValue: {
                 value: 'mean',
+            },
+        },
+        {
+            sampleValue: {
+                value: 'mode',
+            },
+        },
+        {
+            sampleValue: {
+                value: 'range',
+            },
+        },
+        {
+            sampleValue: {
+                value: 'latest',
             },
         }
     ]

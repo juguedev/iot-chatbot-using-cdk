@@ -46,19 +46,12 @@ export class IotChatbotUsingCdkStack extends cdk.Stack {
 			iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole')
 		);
 
-		const dynamoTable = new ddb.Table(this, 'ddb-table', {
-			tableName: props.env.tblName,
-			partitionKey: { name: 'device_id', type: ddb.AttributeType.STRING },
-			sortKey: { name: 'timestamp', type: ddb.AttributeType.NUMBER },
-			billingMode: ddb.BillingMode.PAY_PER_REQUEST,
-			removalPolicy: cdk.RemovalPolicy.DESTROY,
-		});
 
 		// Attach permission policy to the IAM Role to invoke the Lambda function
 		lambdaRole.addToPolicy(
 			new iam.PolicyStatement({
 				actions: ['*'],
-				resources: [dynamoTable.tableArn],
+				resources: ["arn:aws:dynamodb:"+ cdk.Stack.of(this).region +":" +  cdk.Stack.of(this).account +":table/" + props.env.tblName],
 			})
 		);
 
